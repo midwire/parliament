@@ -1,4 +1,5 @@
 require 'hashie'
+require 'github/markdown'
 
 module Parliament
 
@@ -31,18 +32,19 @@ module Parliament
       total = 0
       comments = @client.issue_comments(@repo_string, @pull_request_id)
       comments.each do |comment|
-        total += comment_score(comment)
+        if has_blocker?(comment)
+          total = 0
+          break
+        else
+          total += comment_score(comment)
+        end
       end
       @logger.info("Total Score: #{total}")
       total
     end
 
-    def state
-      statuses = @client.statuses(@repo_string, sha)
-      statuses.first && statuses.first.state || nil
-    end
-
     def merge
+      pr = @client.pull_request(@repo_string, @pull_request_id)
       unless pr.merged?
         @logger.info("Merging Pull Request: #{@pull_request_id} on #{@repo_string}")
         @client.merge_pull_request(@repo_string, @pull_request_id, @commit_message)
@@ -51,19 +53,24 @@ module Parliament
 
     private
 
-    def sha
-      pr.head.sha
-    end
-
-    def pr
-      @pr ||= @client.pull_request(@repo_string, @pull_request_id)
+    def has_blocker?(comment)
+      ! /\[blocker\]/i.match(comment_body_html_strikethrus_removed(comment)).nil?
     end
 
     def comment_score(comment)
-      return 0 if /\[(B|b)locker\]/.match(comment.body)
-      return 1 if /\+\d+/.match(comment.body)
-      return -1 if /\-\d+/.match(comment.body)
+      return 0 if has_blocker?(comment)
+      body = comment_body_html_strikethrus_removed(comment)
+      return 1 if /\+\d+/.match(body)
+      return -1 if /\-\d+/.match(body)
       0
+    end
+
+    def comment_body_html_strikethrus_removed(comment)
+      comment_body_html(comment).gsub(/<del>.*?<\/del>/m, '')
+    end
+
+    def comment_body_html(comment)
+      GitHub::Markdown.render(comment.body)
     end
   end # class PullRequest
 
