@@ -32,19 +32,24 @@ module Parliament
       total = 0
       comments = @client.issue_comments(@repo_string, @pull_request_id)
       comments.each do |comment|
-        if has_blocker?(comment)
+        body = comment_body_html_strikethrus_removed(comment)
+        if has_blocker?(body)
           total = 0
           break
         else
-          total += comment_score(comment)
+          total += comment_score(body)
         end
       end
       @logger.info("Total Score: #{total}")
       total
     end
 
+    def state
+      statuses = @client.statuses(@repo_string, sha)
+      statuses.first && statuses.first.state || nil
+    end
+
     def merge
-      pr = @client.pull_request(@repo_string, @pull_request_id)
       unless pr.merged?
         @logger.info("Merging Pull Request: #{@pull_request_id} on #{@repo_string}")
         @client.merge_pull_request(@repo_string, @pull_request_id, @commit_message)
@@ -53,15 +58,21 @@ module Parliament
 
     private
 
-    def has_blocker?(comment)
-      ! /\[blocker\]/i.match(comment_body_html_strikethrus_removed(comment)).nil?
+    def has_blocker?(comment_body)
+      ! /\[blocker\]/i.match(comment_body).nil?
     end
 
-    def comment_score(comment)
-      return 0 if has_blocker?(comment)
-      body = comment_body_html_strikethrus_removed(comment)
-      return 1 if /\+\d+/.match(body)
-      return -1 if /\-\d+/.match(body)
+    def sha
+      pr.head.sha
+    end
+
+    def pr
+      @pr ||= @client.pull_request(@repo_string, @pull_request_id)
+    end
+
+    def comment_score(comment_body)
+      return 1 if /\+\d+/.match(comment_body)
+      return -1 if /\-\d+/.match(comment_body)
       0
     end
 
