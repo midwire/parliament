@@ -29,16 +29,11 @@ module Parliament
     end
 
     def score
-      total = 0
-      comments = @client.issue_comments(@repo_string, @pull_request_id)
-      comments.each do |comment|
-        body = comment_body_html_strikethrus_removed(comment)
-        if has_blocker?(body)
-          total = 0
-          break
-        else
-          total += comment_score(body)
-        end
+      if user_comments.any? { |comment| has_blocker?(comment.body) }
+        @logger.info("Found a blocker!")
+        total = 0
+      else
+        total = scores_by_username.values.reduce(:+) || 0
       end
       @logger.info("Total Score: #{total}")
       total
@@ -46,7 +41,18 @@ module Parliament
 
     def state
       statuses = @client.statuses(@repo_string, sha)
-      statuses.first && statuses.first.state || nil
+      status = statuses.first && statuses.first.state || nil
+      @logger.info("Status: #{status.inspect}")
+      status
+    end
+
+    def approved_by?(usernames)
+      usernames.each do |username|
+        @logger.info("Not approved by: #{username}")
+        return false if scores_by_username[username] != 1
+      end
+      @logger.info("Approved by: #{usernames.inspect}")
+      true
     end
 
     def merge
@@ -57,6 +63,23 @@ module Parliament
     end
 
     private
+
+    def user_comments
+      @user_comments ||= @client.issue_comments(@repo_string, @pull_request_id).map do |comment|
+        OpenStruct.new(
+          body: comment_body_html_strikethrus_removed(comment),
+          username: comment_username(comment)
+        )
+      end
+    end
+
+    def scores_by_username
+      @scores_by_username ||= user_comments.reduce({}) do |result, comment|
+        score = comment_score(comment.body)
+        result[comment.username] = score unless score == 0
+        result
+      end
+    end
 
     def has_blocker?(comment_body)
       ! /\[blocker\]/i.match(comment_body).nil?
@@ -82,6 +105,10 @@ module Parliament
 
     def comment_body_html(comment)
       GitHub::Markdown.render(comment.body)
+    end
+
+    def comment_username(comment)
+      comment.user.login
     end
   end # class PullRequest
 
