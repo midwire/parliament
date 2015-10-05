@@ -2,7 +2,6 @@ require 'hashie'
 require 'github/markdown'
 
 module Parliament
-
   class PullRequest
     attr_reader :repository
     attr_reader :repository_owner
@@ -15,7 +14,7 @@ module Parliament
       @repository_owner = @data.issue.user.login
       @pull_request_id  = @data.issue.number.to_s
       @commit_message   = @data.issue.title
-      @client           = Octokit::Client.new(:netrc => true)
+      @client           = Octokit::Client.new(netrc: true)
       @repo_string      = "#{@repository_owner}/#{@repository}"
       @logger           = Logger.new('log/parliamentarian.log', 'daily')
     end
@@ -30,7 +29,7 @@ module Parliament
 
     def score
       if user_comments.any? { |comment| has_blocker?(comment.body) }
-        @logger.info("Found a blocker!")
+        @logger.info('Found a blocker!')
         total = 0
       else
         total = scores_by_username.values.reduce(:+) || 0
@@ -56,10 +55,9 @@ module Parliament
     end
 
     def merge
-      unless pr.merged?
-        @logger.info("Merging Pull Request: #{@pull_request_id} on #{@repo_string}")
-        @client.merge_pull_request(@repo_string, @pull_request_id, @commit_message)
-      end
+      return nil if pr.merged?
+      @logger.info("Merging Pull Request: #{@pull_request_id} on #{@repo_string}")
+      @client.merge_pull_request(@repo_string, @pull_request_id, @commit_message)
     end
 
     private
@@ -74,10 +72,9 @@ module Parliament
     end
 
     def scores_by_username
-      @scores_by_username ||= user_comments.reduce({}) do |result, comment|
+      @scores_by_username ||= user_comments.each_with_object({}) do |comment, result|
         score = comment_score(comment.body)
         result[comment.username] = score unless score == 0
-        result
       end
     end
 
@@ -110,6 +107,5 @@ module Parliament
     def comment_username(comment)
       comment.user.login
     end
-  end # class PullRequest
-
-end # Parliament
+  end
+end

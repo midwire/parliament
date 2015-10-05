@@ -1,23 +1,20 @@
 require 'octokit'
 
 module Parliament
-
   class Parliamentarian
-
     def initialize
       @logger = Logger.new('log/parliamentarian.log', 'daily')
     end
 
     def process(data)
       @pull_request = PullRequest.new(data)
-      if @pull_request.comment_exists?
-        log_comment(@pull_request.comment)
-        if ok_to_merge?(@pull_request, data)
-          @logger.info("Ok to merge")
-          @pull_request.merge
-        else
-          @logger.info("Not ok to merge")
-        end
+      return nil unless @pull_request.comment_exists?
+      log_comment(@pull_request.comment)
+      if ok_to_merge?(@pull_request, data)
+        @logger.info('Ok to merge')
+        @pull_request.merge
+      else
+        @logger.info('Not ok to merge')
       end
     end
 
@@ -34,8 +31,8 @@ module Parliament
 
     def ok_to_merge?(pull_request, data)
       status_ok?(pull_request) &&
-      required_users_ok?(pull_request, data) &&
-      score_ok?(pull_request)
+        required_users_ok?(pull_request, data) &&
+        score_ok?(pull_request)
     end
 
     def status_ok?(pull_request)
@@ -58,5 +55,4 @@ module Parliament
       @logger.info("Comment: '#{comment.body}' from '#{comment.user.login}'")
     end
   end
-
 end

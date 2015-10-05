@@ -1,10 +1,9 @@
 require 'json'
 
 module Parliament
-
   class Server
-    OK_RESPONSE = [200, {"Content-Type" => "text/html"}, ["OK"]]
-    NOT_FOUND_RESPONSE = [404, {"Content-Type" => "text/html"}, ["NOT FOUND"]]
+    OK_RESPONSE = [200, { 'Content-Type' => 'text/html' }, ['OK']]
+    NOT_FOUND_RESPONSE = [404, { 'Content-Type' => 'text/html' }, ['NOT FOUND']]
 
     def initialize(parliament_service = Parliamentarian.new)
       @parliament_service = parliament_service
@@ -47,9 +46,9 @@ module Parliament
     end
 
     def data(env)
-      if env["CONTENT_TYPE"] == "application/x-www-form-urlencoded"
-        Rack::Request.new(env).params["payload"]
-      elsif env["CONTENT_TYPE"] == "application/json"
+      if env['CONTENT_TYPE'] == 'application/x-www-form-urlencoded'
+        Rack::Request.new(env).params['payload']
+      elsif env['CONTENT_TYPE'] == 'application/json'
         env['rack.input'].read
       end
     end
@@ -57,6 +56,5 @@ module Parliament
     def event_type(env)
       env['HTTP_X_GITHUB_EVENT']
     end
-  end # Server
-
-end # Parliament
+  end
+end
