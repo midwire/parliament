@@ -1,5 +1,5 @@
 describe Parliament::PullRequest do
-  let(:data)         { Hashie::Mash.new(JSON.parse(File.read('spec/fixtures/issue.json'))) }
+  let(:data)         { JSON.parse(File.read('spec/fixtures/issue.json')) }
   let(:pull_request) { Parliament::PullRequest.new(data) }
 
   let(:positive_comment) { '+1 I suppose we should merge this' }
@@ -20,8 +20,8 @@ describe Parliament::PullRequest do
     end
 
     it 'returns false if a comment does not exist' do
-      data = Hashie::Mash.new(JSON.parse(File.read('spec/fixtures/issue.json')))
-      data.comment = {}
+      data = JSON.parse(File.read('spec/fixtures/issue.json'))
+      data['comment'] = {}
       pull_request = Parliament::PullRequest.new(data)
       expect(pull_request.comment_exists?).to eq(false)
     end
@@ -30,8 +30,8 @@ describe Parliament::PullRequest do
   context '#comment' do
     it 'returns the current comment' do
       comment = pull_request.comment
-      comment.should be_a Hash
-      expect(comment.body).to eq(data.comment.body)
+      expect(comment).to be_a(Hash)
+      expect(comment['body']).to eq(data['comment']['body'])
     end
   end
 
@@ -89,7 +89,11 @@ describe Parliament::PullRequest do
   end
 
   context 'all comment score' do
-    let(:user) { Hashie::Mash.new(user: { login: 'bogus' }) }
+    let(:user) do
+      {
+        user: { login: 'bogus' }
+      }
+    end
     let(:comments_no_blocker) do
       [
         double(:comment, body: blocker_comment_struckthru, user: user),

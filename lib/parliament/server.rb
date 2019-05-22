@@ -8,6 +8,7 @@ module Parliament
     def initialize(parliament_service = Parliamentarian.new)
       @parliament_service = parliament_service
       @logger = Logger.new('log/parliamentarian.log', 'daily')
+      @event_logger = Logger.new('log/events.log', 'daily')
     end
 
     def call(env)
@@ -36,9 +37,15 @@ module Parliament
       /\/webhook/.match(env['PATH_INFO']) && env['REQUEST_METHOD'] == 'POST'
     end
 
-    # Handle the request if it is an 'issue_comment'
+    # Handle the request if it is a 'status' update
     def handle_request(env)
-      @parliament_service.process(parsed_data(env)) if event_type(env) == 'issue_comment'
+      log_request(env) if ENV['DEBUG']
+      @parliament_service.process(parsed_data(env)) if event_type(env) == 'status'
+    end
+
+    def log_request(env)
+      type = event_type(env)
+      @event_logger.info("Event: (#{type}) [#{parsed_data(env)}]")
     end
 
     def parsed_data(env)

@@ -1,4 +1,3 @@
-require 'hashie'
 require 'github/markdown'
 
 module Parliament
@@ -9,22 +8,22 @@ module Parliament
     attr_reader :commit_message
 
     def initialize(data = {})
-      @data             = Hashie::Mash.new(data)
-      @repository       = @data.repository.name
-      @repository_owner = @data.issue.user.login
-      @pull_request_id  = @data.issue.number.to_s
-      @commit_message   = @data.issue.title
+      @data             = data
+      @repository       = @data['repository']['name']
+      @repository_owner = @data['issue']['user']['login']
+      @pull_request_id  = @data['issue']['number'].to_s
+      @commit_message   = @data['issue']['title']
       @client           = Octokit::Client.new(netrc: true)
       @repo_string      = "#{@repository_owner}/#{@repository}"
       @logger           = Logger.new('log/parliamentarian.log', 'daily')
     end
 
     def comment_exists?
-      @data.comment.any?
+      @data['comment'].any?
     end
 
     def comment
-      @data.comment
+      @data['comment']
     end
 
     def score
@@ -105,7 +104,7 @@ module Parliament
     end
 
     def comment_username(comment)
-      comment.user.login
+      comment['user']['login']
     end
   end
 end

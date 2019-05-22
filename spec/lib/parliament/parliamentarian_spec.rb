@@ -6,13 +6,13 @@ describe Parliament::Parliamentarian do
   end
 
   context 'Instance Methods' do
-    let(:data)            { Hashie::Mash.new(JSON.parse(File.read('spec/fixtures/issue.json'))) }
+    let(:data)            { JSON.parse(File.read('spec/fixtures/issue.json')) }
     let(:parliamentarian) { Parliament::Parliamentarian.new }
 
     describe '#process' do
       before(:each) do
         expect_any_instance_of(Parliamentarian::PullRequest).to receive(:comment_exists?).and_return(true)
-        expect_any_instance_of(Parliamentarian::PullRequest).to receive(:comment).and_return(data.comment)
+        expect_any_instance_of(Parliamentarian::PullRequest).to receive(:comment).and_return(data['comment'])
       end
 
       describe 'when status checking enabled (by default)' do

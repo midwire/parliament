@@ -52,7 +52,7 @@ module Parliament
     end
 
     def log_comment(comment)
-      @logger.info("Comment: '#{comment.body}' from '#{comment.user.login}'")
+      @logger.info("Comment: '#{comment['body']}' from '#{comment['user']['login']}'")
     end
   end
 end
