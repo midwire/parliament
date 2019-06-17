@@ -1,16 +1,12 @@
 # Parliament
 
-A Ruby app that listens to GitHub events and merges pull requests when specified criteria have been met. Inspired by [plus-pull](https://github.com/christofdamian/plus-pull).
+A Ruby app that listens to GitHub events and automatically merges pull requests when specified they are mergeable.
 
 ## Usage
 
 When Pull requests have satisfied the following criteria, they are automatically merged:
-* The sum of `+1` and `-1` in comments is greater than or equal to the configured sum. *Note: only the first vote in each comment is counted.*
-* There are no comments containing `/\[blocker\]/i` (`[blocker]` or `[Blocker]` or `[BLOCKER]`, etc).
+* The requirements configured in the GitHub repository are met for the base branch (the branch being merged into). This includes any branch protection requirements, like Continuous Integration checks, required number of approvals, user-specific required approvals, etc.
 * The pull request can be merged.
-* Optionally (defaults to true), the commit status must be `success`.
-
-*Note: When parsing comments, text inside `~~` (Markdown for ~~strikethrough~~) is ignored.*
 
 ## Installation/Setup
 
@@ -32,13 +28,8 @@ Parliament can be configured by setting configuration options within the configu
 ```ruby
 Parliament.configure do |config|
 
-  # Coming soon?
-  config.github_token = <GitHub Oath Token>
-
-  # the sum of +1/-1 must be >= threshold
-  #
-  # default: 3
-  config.threshold = 2
+  # Personal Access Token
+  config.personal_access_token = <GitHub Personal Access Token>
 
   # current status must be success
   #
@@ -52,6 +43,14 @@ Parliament.configure do |config|
 
   # also accepts an array-returning Proc that is called on each check with the raw data from the webhook.
   config.required_usernames = Proc.new { |data| ... }
+
+  # an array of required CI contexts
+  #
+  # default: empty array
+  config.required_contexts = ['ci/circleci: validate', 'codeclimate']
+
+  # also accepts an array-returning Proc that is called on each check with the raw data from the webhook.
+  config.required_contexts = Proc.new { |data| ... }
 
 end
 ```

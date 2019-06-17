@@ -1,9 +1,11 @@
+# frozen_string_literal: true
+
 require 'json'
 
 module Parliament
   class Server
-    OK_RESPONSE = [200, { 'Content-Type' => 'text/html' }, ['OK']]
-    NOT_FOUND_RESPONSE = [404, { 'Content-Type' => 'text/html' }, ['NOT FOUND']]
+    OK_RESPONSE = [200, { 'Content-Type' => 'text/html' }, ['OK']].freeze
+    NOT_FOUND_RESPONSE = [404, { 'Content-Type' => 'text/html' }, ['NOT FOUND']].freeze
 
     def initialize(parliament_service = Parliamentarian.new)
       @parliament_service = parliament_service
@@ -20,6 +22,7 @@ module Parliament
         OK_RESPONSE
       elsif webhook_post_request(env)
         @logger.info("EventType: #{event_type(env)}")
+        @parsed_data = nil
         handle_request(env)
         OK_RESPONSE
       else
@@ -49,14 +52,17 @@ module Parliament
     end
 
     def parsed_data(env)
-      JSON.parse(data(env))
+      @parsed_data ||= JSON.parse(data(env))
     end
 
     def data(env)
-      if env['CONTENT_TYPE'] == 'application/x-www-form-urlencoded'
+      content_type = env['CONTENT_TYPE']
+      if content_type == 'application/x-www-form-urlencoded'
         Rack::Request.new(env).params['payload']
-      elsif env['CONTENT_TYPE'] == 'application/json'
+      elsif content_type == 'application/json'
         env['rack.input'].read
+      else
+        fail "Invalid request type #{content_type}"
       end
     end
 
